@@ -1,63 +1,54 @@
+# 🏆 Rising Stars GNN Mini-Competition: Inductive Node Classification
 
-# GNN Coding Competition Template
+Welcome to the **Rising Stars GNN Mini-Competition** 🚀
 
-This repository provides a **secure, reproducible template** for running a
-Graph Neural Network (GNN) competition that supports **humans and LLMs**
-competing on equal footing.
+This repository hosts a hands-on challenge on **inductive node classification** using **Graph Neural Networks (GNNs)**. Your task is to train a model on a given graph and **generalize to completely unseen nodes**.
 
-The design intentionally **does not execute participant code**. Instead,
-participants submit **predictions only**, which are automatically evaluated
-and ranked on a public leaderboard using GitHub Actions.
-
-This makes the competition:
-- Safe (no untrusted code execution)
-- Fully reproducible
-- Suitable for human-vs-LLM evaluation studies
+This competition is designed to be **safe and reproducible**. You will not submit code; instead, you will submit **predictions only**, which are automatically evaluated and ranked on a public leaderboard using GitHub Actions.
 
 ---
 
-## 1. Task Overview
+## 🎯 Challenge Overview
 
-**Task:** Node classification on a graph  
-**Input:** Public graph structure and node features  
-**Output:** Predictions for unseen test nodes  
-**Metric:** ROC-AUC (binary classification)
+You are given a citation network with node features and labels for training nodes only.  
+Your goal is to **predict the research topic of unseen nodes** using an **inductive GNN model**.
 
-Participants train any GNN or non-GNN model *offline* and submit predictions
-for the test nodes.
+### 🔍 What Makes This Inductive?
+
+* Test nodes are **not present during training**
+* Their IDs and labels are **never seen**
+* The model must rely **only on learned parameters**, not memorized node embeddings
+
+> **Train once, generalize to new nodes.**
 
 ---
 
-## 2. Repository Structure
+## 📂 Dataset Description
 
-```
+We use the **Cora citation network**, a standard benchmark in graph learning.
+
+### Graph Components
+
+* **Nodes:** Scientific papers
+* **Edges:** Citation relationships
+* **Node features:** Bag-of-words vectors
+* **Labels:** Research topics
+
+### 📁 Repository File Structure
+
+```text
 .
 ├── data/
-│   ├── public/
-│   │   ├── train_edges.csv
-│   │   ├── train_labels.csv
-│   │   ├── val_edges.csv
-│   │   ├── val_labels.csv
-│   │   ├── test_edges.csv
-│   │   ├── test_nodes.csv
-│   │   └── sample_submission.csv
-│   └── private/
-│       └── test_labels.csv   # never committed (used only in CI)
-├── competition/
-│   ├── config.yaml
-│   ├── validate_submission.py
-│   ├── evaluate.py
-│   └── metrics.py
+│   └── public/
+│       ├── edge_list.csv          # Edges between training nodes
+│       ├── train.csv              # Training nodes (IDs, features, labels)
+│       ├── test_edges.csv         # Edges involving test nodes (inference only)
+│       ├── test_nodes.csv         # Unseen test nodes (IDs, features only)
+│       └── sample_submission.csv  # Example format for your predictions
 ├── submissions/
-│   ├── README.md
-│   └── inbox/
-├── leaderboard/
-│   ├── leaderboard.csv
-│   └── leaderboard.md
-└── .github/workflows/
-    ├── score_submission.yml
-    └── publish_leaderboard.yml
-```
+│   └── inbox/                     # Where you will open PRs to submit
+├── leaderboard/                   # Live ranking data
+└── docs/                          # Source code for the interactive leaderboard website
 
 ---
 
