@@ -1,1 +1,82 @@
 # GitHub Actions scoring workflow placeholder
+name: Score Submission
+
+on:
+  pull_request:
+    paths:
+      - 'submissions/**'  # Triggers only when files in submissions/ change
+
+permissions:
+  contents: read
+  pull-requests: write    # Required to post the score comment
+
+jobs:
+  validate-and-score:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install pandas
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Retrieve Hidden Labels
+        env:
+          # This pulls the text from the Secret you created in Phase 2
+          TEST_LABELS: ${{ secrets.TEST_LABELS }}
+        run: |
+          echo "$TEST_LABELS" > secret_labels.csv
+
+      - name: Find Submission File
+        id: find_csv
+        run: |
+          # Finds the first predictions.csv file that was changed/added
+          # (Assumes participants follow the folder structure)
+          FILE=$(find submissions -name "predictions.csv" | head -n 1)
+          
+          if [ -z "$FILE" ]; then
+            echo "::error::No predictions.csv found!"
+            exit 1
+          fi
+          
+          echo "FILE_PATH=$FILE" >> $GITHUB_ENV
+          echo "Found submission: $FILE"
+
+      - name: Validate Submission
+        run: |
+          # Uses your validate_submission.py
+          # Arguments: [Submission File] [Public Test Nodes]
+          python competition/validate_submission.py "$FILE_PATH" "data/public/test_nodes.csv"
+
+      - name: Score Submission
+        id: score_step
+        run: |
+          # Uses your evaluate.py
+          # Arguments: [Submission File] [Hidden Labels]
+          OUTPUT=$(python competition/evaluate.py "$FILE_PATH" "secret_labels.csv")
+          
+          echo "$OUTPUT"
+          
+          # Extracts the score number to use in the comment (e.g., "0.8523")
+          SCORE_VAL=$(echo "$OUTPUT" | grep "SCORE=" | cut -d'=' -f2)
+          echo "Calculated Score: $SCORE_VAL"
+          echo "FINAL_SCORE=$SCORE_VAL" >> $GITHUB_ENV
+
+      - name: Post Score to Pull Request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const score = process.env.FINAL_SCORE;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### 🤖 Automated Scoring Complete\n\n**✅ Valid Submission**\n**🏆 Score:** ${score}\n\n_This score is based on the hidden test set._`
+            })
